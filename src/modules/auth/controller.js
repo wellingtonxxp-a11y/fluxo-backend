@@ -1,18 +1,18 @@
-import { user as _user } from "../../config/prisma";
-import { hash, compare } from "bcrypt";
-import { sign } from "jsonwebtoken";
+const prisma = require("../../config/prisma");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 async function register(req, res) {
   const { name, email, password } = req.body;
 
   try {
-    const hashed = await hash(password, 10);
+    const hashed = await bcrypt.hash(password, 10);
 
-    const user = await _user.create({
+    const user = await prisma.user.create({
       data: { name, email, password: hashed }
     });
 
-    const token = sign(
+    const token = jwt.sign(
       { id: user.id },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
@@ -33,7 +33,7 @@ async function login(req, res) {
   const { email, password } = req.body;
 
   try {
-    const user = await _user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { email }
     });
 
@@ -41,13 +41,13 @@ async function login(req, res) {
       return res.status(400).json({ error: "Usuário não encontrado" });
     }
 
-    const valid = await compare(password, user.password);
+    const valid = await bcrypt.compare(password, user.password);
 
     if (!valid) {
       return res.status(400).json({ error: "Senha inválida" });
     }
 
-    const token = sign(
+    const token = jwt.sign(
       { id: user.id },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
@@ -60,4 +60,4 @@ async function login(req, res) {
   }
 }
 
-export default { register, login };
+module.exports = { register, login };

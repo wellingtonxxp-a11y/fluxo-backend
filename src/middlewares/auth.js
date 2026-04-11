@@ -1,6 +1,6 @@
-import { verify } from "jsonwebtoken";
+const jwt = require("jsonwebtoken");
 
-export default function (req, res, next) {
+module.exports = function (req, res, next) {
   const header = req.headers["authorization"];
 
   if (!header) {
@@ -10,7 +10,7 @@ export default function (req, res, next) {
   const token = header.split(" ")[1];
 
   try {
-    const decoded = verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
     next();
   } catch {
