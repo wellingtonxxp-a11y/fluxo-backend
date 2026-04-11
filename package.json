@@ -3,19 +3,22 @@
   "version": "1.0.0",
   "main": "src/app.js",
   "scripts": {
-    "start": "node src/app.js",
+    "dev": "node src/app.js",
+    "start": "npm run migrate && node src/app.js",
     "build": "prisma generate",
     "postinstall": "prisma generate",
     "migrate": "prisma migrate deploy"
   },
   "type": "commonjs",
   "dependencies": {
+    "@prisma/adapter-pg": "^7.7.0",
     "@prisma/client": "^7.7.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.0",
     "express": "^5.2.1",
-    "jsonwebtoken": "^9.0.3"
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.11.3"
   },
   "devDependencies": {
     "prisma": "^7.7.0"

@@ -1,8 +1,12 @@
+require("dotenv").config();
+
 console.log("VERSION NOVA BACKEND");
-console.log("DATABASE_URL:", process.env.DATABASE_URL);
+console.log("Environment:", process.env.NODE_ENV || "development");
+
 const express = require("express");
 const cors = require("cors");
 
+const prisma = require("./config/prisma");
 const authRoutes = require("./modules/auth/routes");
 const flowRoutes = require("./modules/flow/routes");
 const dashboardRoutes = require("./modules/dashboard/routes");
@@ -16,12 +20,32 @@ app.get("/", (req, res) => {
   res.send("API Fluxo funcionando");
 });
 
+app.get("/health", async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: "ok", database: "connected" });
+  } catch (err) {
+    res.status(500).json({ status: "error", database: "disconnected" });
+  }
+});
+
 app.use("/auth", authRoutes);
 app.use("/flow", flowRoutes);
 app.use("/dashboard", dashboardRoutes);
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, "0.0.0.0", () => {
+const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server rodando na porta ${PORT}`);
+});
+
+// Graceful shutdown
+process.on("SIGTERM", async () => {
+  console.log("SIGTERM received: closing HTTP server");
+  server.close(async () => {
+    console.log("HTTP server closed");
+    await prisma.$disconnect();
+    console.log("Prisma disconnected");
+    process.exit(0);
+  });
 });
