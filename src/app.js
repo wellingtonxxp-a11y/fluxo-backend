@@ -1,4 +1,5 @@
 console.log("VERSION NOVA BACKEND");
+console.log("DATABASE_URL:", process.env.DATABASE_URL);
 const express = require("express");
 const cors = require("cors");
 
