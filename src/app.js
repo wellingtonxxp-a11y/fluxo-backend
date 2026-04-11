@@ -1,3 +1,4 @@
+console.log("VERSION NOVA BACKEND");
 const express = require("express");
 const cors = require("cors");
 
