@@ -1,4 +1,4 @@
-const prisma = require("../../config/prisma");
+const prisma = require("../../prisma");
 
 async function getDashboard() {
   const flows = await prisma.flow.findMany();
