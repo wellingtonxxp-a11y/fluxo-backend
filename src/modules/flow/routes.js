@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const auth = require("../../middleware/auth");
+const auth = require("../../middlewares/auth");
 const controller = require("./controller");
 
 router.post("/start", auth, controller.startFlow);
