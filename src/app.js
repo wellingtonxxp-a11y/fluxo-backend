@@ -6,7 +6,7 @@ console.log("Environment:", process.env.NODE_ENV || "development");
 const express = require("express");
 const cors = require("cors");
 
-const prisma = require("./prisma");
+const prisma = require("../../prisma");
 const authRoutes = require("./modules/auth/routes");
 const flowRoutes = require("./modules/flow/routes");
 const dashboardRoutes = require("./modules/dashboard/routes");
