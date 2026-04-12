@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
 
-const prisma = require("../../prisma");
-const auth = require("../../middleware/auth");
+const prisma = require("../../../prisma");
+const auth = require("../../middlewares/auth");
 
 // =============================
 // ASSISTENTE DE DECISÃO
