@@ -11,14 +11,11 @@ const authRoutes = require("./modules/auth/routes");
 const flowRoutes = require("./modules/flow/routes");
 const dashboardRoutes = require("./modules/dashboard/routes");
 
-const authRoutes = require("./modules/auth/routes");
-
-app.use("/", authRoutes);
-
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use("/", authRoutes);
 
 app.get("/", (req, res) => {
   res.send("API Fluxo funcionando");
