@@ -10,12 +10,17 @@ const prisma = require("../prisma");
 const authRoutes = require("./modules/auth/routes");
 const flowRoutes = require("./modules/flow/routes");
 const dashboardRoutes = require("./modules/dashboard/routes");
+const insightsRoutes = require("./modules/insights/routes");
+const assistantRoutes = require("./modules/assistant/routes");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 app.use("/", authRoutes);
+app.use("/", insightsRoutes);
+app.use("/", assistantRoutes);
+app.use("/", require("./modules/realtime/routes"));
 
 app.get("/", (req, res) => {
   res.send("API Fluxo funcionando");
