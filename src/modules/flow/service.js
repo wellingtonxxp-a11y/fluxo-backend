@@ -1,4 +1,4 @@
-const prisma = require("../prisma");
+const prisma = require("../../../prisma");
 
 async function start(userId, data) {
   return prisma.flow.create({
