@@ -12,6 +12,7 @@ const flowRoutes = require("./modules/flow/routes");
 const dashboardRoutes = require("./modules/dashboard/routes");
 const insightsRoutes = require("./modules/insights/routes");
 const assistantRoutes = require("./modules/assistant/routes");
+const copilotRoutes = require("./modules/copilot/routes");
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use(express.json());
 app.use("/", authRoutes);
 app.use("/", insightsRoutes);
 app.use("/", assistantRoutes);
+app.use("/", copilotRoutes);
 app.use("/", require("./modules/realtime/routes"));
 
 app.get("/", (req, res) => {

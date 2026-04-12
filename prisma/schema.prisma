@@ -4,38 +4,55 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-  id        Int       @id @default(autoincrement())
-  name      String
-  email     String    @unique
-  password  String    @db.VarChar(255)
-  createdAt DateTime  @default(now())
-  lastLogin DateTime?
-  isActive  Boolean   @default(true)
-  flows     Flow[]
+  id          Int       @id @default(autoincrement())
+  name        String
+  email       String    @unique
+  password    String
+
+  createdAt   DateTime  @default(now())
+  lastLogin   DateTime?
+  isActive    Boolean   @default(true)
+
+  flows       Flow[]
 
   @@index([email])
 }
 
 model Flow {
-  id              Int       @id @default(autoincrement())
-  userId          Int
-  platform        Platform
-  zone            Zone
-  startedAt       DateTime
-  finishedAt      DateTime?
-  durationMinutes Float?
-  value           Float?
-  km              Float?
-  createdAt       DateTime  @default(now())
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          Int       @id @default(autoincrement())
 
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  platform    Platform
+  zone        Zone
+
+  // 🔥 LOCALIZAÇÃO (ESSENCIAL)
+  latitude    Float?
+  longitude   Float?
+
+  // 🔥 FUTURO (PLACES)
+  placeName   String?
+  placeAddress String?
+
+  startedAt   DateTime
+  finishedAt  DateTime?
+
+  durationMin Float?
+  value       Float?
+  km          Float?
+
+  createdAt   DateTime  @default(now())
+
+  // 🔥 INDEXES IMPORTANTES (performance real)
   @@index([userId])
   @@index([zone])
   @@index([createdAt])
-  @@index([userId, createdAt])
+  @@index([latitude, longitude])
 }
 
 enum Platform {
