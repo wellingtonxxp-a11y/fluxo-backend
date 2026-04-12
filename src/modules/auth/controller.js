@@ -1,4 +1,4 @@
-const prisma = require("../prisma");
+const prisma = require("../../../prisma");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
