@@ -3,6 +3,7 @@ require("dotenv").config();
 console.log("VERSION NOVA BACKEND");
 console.log("Environment:", process.env.NODE_ENV || "development");
 
+require("ts-node/register/transpile-only");
 const express = require("express");
 const cors = require("cors");
 
@@ -13,11 +14,13 @@ const dashboardRoutes = require("./modules/dashboard/routes");
 const insightsRoutes = require("./modules/insights/routes");
 const assistantRoutes = require("./modules/assistant/routes");
 const copilotRoutes = require("./modules/copilot/routes");
+const newRoutes = require("./routes.ts");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use("/", newRoutes);
 app.use("/", authRoutes);
 app.use("/", insightsRoutes);
 app.use("/", assistantRoutes);

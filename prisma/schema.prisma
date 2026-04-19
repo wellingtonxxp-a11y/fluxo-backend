@@ -18,41 +18,90 @@ model User {
   isActive    Boolean   @default(true)
 
   flows       Flow[]
+  feedbacks   HotspotFeedback[]
+  reputation  UserReputation?
+  strategies  StrategySession[]
 
   @@index([email])
 }
 
+model Zone {
+  id         Int               @id @default(autoincrement())
+  name       String            @unique
+  demand     Int               @default(0)
+  flows      Flow[]
+  feedbacks  HotspotFeedback[]
+
+  @@index([name])
+}
+
 model Flow {
-  id          Int       @id @default(autoincrement())
-
-  userId      Int
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  platform    Platform
-  zone        Zone
-
-  // 🔥 LOCALIZAÇÃO (ESSENCIAL)
-  latitude    Float?
-  longitude   Float?
-
-  // 🔥 FUTURO (PLACES)
-  placeName   String?
+  id           Int        @id @default(autoincrement())
+  userId       Int
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform     Platform
+  zone         ZoneName?
+  zoneId       Int?
+  zoneModel    Zone?      @relation(fields: [zoneId], references: [id])
+  latitude     Float?
+  longitude    Float?
+  placeName    String?
   placeAddress String?
+  startedAt    DateTime
+  finishedAt   DateTime?
+  durationMin  Float?
+  value        Float?
+  km           Float?
+  createdAt    DateTime   @default(now())
 
-  startedAt   DateTime
-  finishedAt  DateTime?
-
-  durationMin Float?
-  value       Float?
-  km          Float?
-
-  createdAt   DateTime  @default(now())
-
-  // 🔥 INDEXES IMPORTANTES (performance real)
   @@index([userId])
-  @@index([zone])
+  @@index([zoneId])
   @@index([createdAt])
   @@index([latitude, longitude])
+}
+
+model HotspotFeedback {
+  id         Int          @id @default(autoincrement())
+  userId     Int
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  zoneId     Int
+  zone       Zone         @relation(fields: [zoneId], references: [id])
+  latitude   Float
+  longitude  Float
+  type       FeedbackType
+  weight     Float
+  createdAt  DateTime     @default(now())
+
+  @@index([userId])
+  @@index([zoneId])
+  @@index([createdAt])
+}
+
+model UserReputation {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score         Float    @default(0)
+  feedbackCount Int      @default(0)
+  updatedAt     DateTime @updatedAt
+}
+
+model StrategySession {
+  id            Int            @id @default(autoincrement())
+  userId        Int
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status        StrategyStatus
+  startedAt     DateTime       @default(now())
+  endedAt       DateTime?
+  totalDistance Float          @default(0)
+  totalTimeMin  Float          @default(0)
+  totalScore    Float          @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 enum Platform {
@@ -62,10 +111,23 @@ enum Platform {
   rappi
 }
 
-enum Zone {
+enum ZoneName {
   zona_sul
   zona_norte
   zona_leste
   zona_oeste
   centro
+}
+
+enum FeedbackType {
+  GOOD
+  BAD
+  DANGER
+  TRAFFIC
+  HIGH
+}
+
+enum StrategyStatus {
+  active
+  ended
 }

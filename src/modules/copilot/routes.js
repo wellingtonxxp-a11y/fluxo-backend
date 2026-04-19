@@ -4,16 +4,20 @@ const router = express.Router();
 const prisma = require("../../../prisma");
 const auth = require("../../middlewares/auth");
 
-const { clusterFlows, scoreCluster, predictCluster } = require("../../services/cluster.service");
-const { getHotspotPlace } = require("../../services/places.service");
-const { getUserPerformance, rankClustersForUser } = require("../../services/ai.service");
+const {
+  clusterFlows,
+  scoreCluster,
+  predictCluster
+} = require("../../services/cluster.services");
+
+const { getHotspotPlace } = require("../../services/places.services");
 const { generateInstruction } = require("../../services/decision.service");
 
-// ================= COPILOT =================
+// ================= COPILOT MULTI HOTSPOTS =================
 router.get("/", auth, async (req, res) => {
   try {
 
-    // ================= 1. FLOWS MERCADO =================
+    // ================= 1. FLOWS =================
     const flows = await prisma.flow.findMany({
       where: {
         createdAt: {
@@ -25,13 +29,13 @@ router.get("/", auth, async (req, res) => {
     const validFlows = flows.filter(f => f.latitude && f.longitude);
 
     if (validFlows.length === 0) {
-      return res.json({ best_hotspot: null, instruction: null });
+      return res.json({ zones: [] });
     }
 
     // ================= 2. CLUSTERS =================
     const clusters = clusterFlows(validFlows, 200);
 
-    // ================= 3. SCORE + PREVISÃO =================
+    // ================= 3. ENRIQUECER =================
     const enriched = clusters.map(c => {
       const metrics = scoreCluster(c);
       const prediction = predictCluster(c);
@@ -43,43 +47,65 @@ router.get("/", auth, async (req, res) => {
       };
     });
 
-    // ================= 4. DADOS DO USUÁRIO =================
-    const userFlows = await prisma.flow.findMany({
-      where: { userId: req.user.id }
+    // ================= 4. AGRUPAR POR ZONA =================
+    const zonesMap = {};
+
+    enriched.forEach(c => {
+      const zone = c.zone || "unknown";
+
+      if (!zonesMap[zone]) {
+        zonesMap[zone] = [];
+      }
+
+      zonesMap[zone].push(c);
     });
 
-    const userPerf = getUserPerformance(userFlows);
+    // ================= 5. PROCESSAR CADA ZONA =================
+    const zonesResult = [];
 
-    // ================= 5. IA PERSONALIZADA =================
-    const personalized = rankClustersForUser(enriched, userPerf);
+    for (const [zone, clusterList] of Object.entries(zonesMap)) {
 
-    personalized.sort((a, b) => b.personalScore - a.personalScore);
+      // ordenar por score
+      clusterList.sort((a, b) => b.score - a.score);
 
-    const best = personalized[0];
+      // pegar TOP 3
+      const topClusters = clusterList.slice(0, 3);
 
-    if (!best) {
-      return res.json({ best_hotspot: null, instruction: null });
+      const hotspots = [];
+
+      for (const cluster of topClusters) {
+
+        const { lat, lng } = cluster.center;
+
+        const place = await getHotspotPlace(lat, lng);
+
+        const instruction = generateInstruction(cluster, place);
+
+        hotspots.push({
+          name: place.name,
+          address: place.address,
+          lat: place.lat,
+          lng: place.lng,
+
+          score: cluster.score,
+          predicted: cluster.predicted,
+          trend: cluster.trend,
+          flows: cluster.total,
+          recent: cluster.recent,
+
+          instruction
+        });
+      }
+
+      zonesResult.push({
+        zone,
+        hotspots
+      });
     }
 
-    // ================= 6. PLACE =================
-    const { lat, lng } = best.center;
-
-    const place = await getHotspotPlace(lat, lng);
-
-    // ================= 7. DECISÃO =================
-    const instruction = generateInstruction(best, place);
-
-    // ================= 8. RESPONSE FINAL =================
+    // ================= 6. RESPONSE =================
     res.json({
-      best_hotspot: {
-        ...place,
-        score: best.score,
-        personal_score: best.personalScore,
-        predicted: best.predicted,
-        trend: best.trend,
-        flows: best.total
-      },
-      instruction
+      zones: zonesResult
     });
 
   } catch (err) {

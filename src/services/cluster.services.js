@@ -37,7 +37,6 @@ function clusterFlows(flows, radius = 200) {
       if (dist <= radius) {
         cluster.points.push(flow);
 
-        // atualização incremental mais estável
         const total = cluster.points.length;
 
         cluster.center.lat =
@@ -58,7 +57,7 @@ function clusterFlows(flows, radius = 200) {
           lng: flow.longitude
         },
         points: [flow],
-        zone: flow.zone || null // 🔥 importante pra IA depois
+        zone: flow.zone || null
       });
     }
   }
@@ -66,40 +65,65 @@ function clusterFlows(flows, radius = 200) {
   return clusters;
 }
 
-// ================= SCORE =================
+// ================= SCORE + IA =================
 function scoreCluster(cluster) {
   const points = cluster.points;
-
   const now = Date.now();
 
   const total = points.length;
 
-  const recent = points.filter(
+  const recentPoints = points.filter(
     p => now - new Date(p.createdAt).getTime() < 10 * 60 * 1000
-  ).length;
+  );
+
+  const pastPoints = points.filter(p => {
+    const t = new Date(p.createdAt).getTime();
+    return t >= now - 20 * 60 * 1000 && t < now - 10 * 60 * 1000;
+  });
+
+  const recent = recentPoints.length;
+  const past = pastPoints.length;
 
   const values = points.map(p => p.value || 0);
   const avgValue =
     values.reduce((acc, v) => acc + v, 0) / Math.max(total, 1);
 
-  // 🔥 densidade por tempo (ritmo real)
   const oldest = Math.min(...points.map(p => new Date(p.createdAt).getTime()));
   const minutes = Math.max((now - oldest) / 60000, 1);
 
   const density = total / minutes;
 
-  // 🔥 score mais inteligente
+  // ================= TREND =================
+  let trend = "stable";
+
+  if (recent > past * 1.2) trend = "rising";
+  else if (recent < past * 0.8) trend = "falling";
+
+  // ================= ACCELERATION =================
+  const acceleration = recent - past;
+
+  // ================= PREVISÃO =================
+  const predicted =
+    recent * 0.6 +
+    density * 2 +
+    (trend === "rising" ? 2 : trend === "falling" ? -1 : 0);
+
+  // ================= SCORE FINAL =================
   const score =
-    total * 0.4 +
+    total * 0.3 +
     recent * 0.3 +
     avgValue * 0.2 +
-    density * 0.1;
+    density * 0.2;
 
   return {
     total,
     recent,
+    past,
     avgValue,
     density,
+    trend,
+    acceleration,
+    predicted: Math.max(0, Number(predicted.toFixed(2))),
     score: Math.round(score)
   };
 }

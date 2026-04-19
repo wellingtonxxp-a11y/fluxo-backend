@@ -1,5 +1,5 @@
 const prisma = require("../../../prisma");
-const { getHotspotPlace } = require("../../services/places.service");
+const { getHotspotPlace } = require("../../services/places.services");
 
 // ================= START FLOW =================
 async function start(userId, data) {

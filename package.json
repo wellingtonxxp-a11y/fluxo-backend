@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "main": "src/app.js",
   "scripts": {
-    "dev": "node src/app.js",
-    "start": "npm run migrate && node src/app.js",
-    "build": "prisma generate",
+    "dev": "node -r ts-node/register/transpile-only src/app.js",
+    "start": "npm run migrate && node -r ts-node/register/transpile-only src/app.js",
+    "build": "tsc",
+    "compile": "tsc --noEmit",
     "postinstall": "prisma generate",
     "migrate": "prisma migrate deploy"
   },
@@ -18,9 +19,14 @@
     "dotenv": "^17.4.0",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
-    "pg": "^8.11.3"
+    "pg": "^8.11.3",
+    "axios": "^1.6.0"
   },
   "devDependencies": {
-    "prisma": "^7.7.0"
+    "prisma": "^7.7.0",
+    "typescript": "^5.5.4",
+    "ts-node": "^10.9.1",
+    "@types/express": "^4.17.19",
+    "@types/node": "^20.12.0"
   }
 }
