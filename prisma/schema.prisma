@@ -17,10 +17,11 @@ model User {
   lastLogin   DateTime?
   isActive    Boolean   @default(true)
 
-  flows       Flow[]
-  feedbacks   HotspotFeedback[]
-  reputation  UserReputation?
-  strategies  StrategySession[]
+  flows                 Flow[]
+  feedbacks             HotspotFeedback[]
+  reputation            UserReputation?
+  strategies            StrategySession[]
+  deliverySessions      DeliverySession[] @relation("UserDeliverySessions")
 
   @@index([email])
   @@index([createdAt])
@@ -153,4 +154,63 @@ enum StrategyStatus {
   ACTIVE
   COMPLETED
   CANCELLED
+}
+
+// ============ HOTSPOT SCORING MODELS ============
+
+/// Modelo de Sessão de Entrega (Sinal bruto para scoring)
+model DeliverySession {
+  id              Int         @id @default(autoincrement())
+  userId          Int
+  user            User        @relation("UserDeliverySessions", fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Sinal bruto: origem da entrega
+  startLat        Float
+  startLng        Float
+  
+  // Dados adicionais
+  endLat          Float?
+  endLng          Float?
+  durationSec     Int?
+  distanceMeters  Float?
+  
+  // Grid cell mapping
+  cellId          String      @db.VarChar(32)
+  hotspotCell     HotspotCell @relation(fields: [cellId], references: [id], onDelete: Cascade)
+  
+  createdAt       DateTime    @default(now())
+  
+  @@index([userId])
+  @@index([cellId])
+  @@index([createdAt])
+  @@index([startLat, startLng])
+}
+
+/// Modelo de Célula de Hotspot (Agregação por célula)
+model HotspotCell {
+  id                  String      @id @db.VarChar(32)  // geohash
+  
+  // Localização da célula
+  centerLat           Float
+  centerLng           Float
+  precision           Int         @default(7)  // geohash precision
+  
+  // Contadores
+  pickupCount         Int         @default(0)
+  lastUpdated         DateTime    @updatedAt
+  
+  // Distribuição temporal (JSON para flexibilidade)
+  hourlyDistribution  Json        @default("{}")  // Map<hour, count>
+  dailyDistribution   Json        @default("{}")  // Map<day, count>
+  
+  // Metadados
+  confidence          Float       @default(0)  // 0-1 based on pickupCount
+  
+  deliverySessions    DeliverySession[]
+  
+  createdAt           DateTime    @default(now())
+  
+  @@index([centerLat, centerLng])
+  @@index([pickupCount])
+  @@index([lastUpdated])
 }

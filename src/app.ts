@@ -36,7 +36,12 @@ app.get("/", (req: Request, res: Response) => {
     status: "running",
     endpoints: {
       health: "GET /health",
-      copilot: "GET /copilot?lat=X&lng=Y",
+      copilot_legacy: "GET /copilot?lat=X&lng=Y",
+      copilot_decision: "POST /copilot/decision",
+      hotspot_decision: "POST /copilot/hotspot (NEW)",
+      hotspot_session: "POST /copilot/session",
+      hotspot_nearby: "GET /copilot/nearby?lat=X&lng=Y",
+      hotspot_stats: "GET /copilot/stats",
       flow: "POST /flow",
       feedback: "POST /feedback",
       strategy: "POST /strategy/start"
