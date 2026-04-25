@@ -1,19 +1,38 @@
-const jwt = require("jsonwebtoken");
+/**
+ * Middleware de Autenticação
+ * Valida JWT no header Authorization
+ */
 
-export default function auth(req: any, res: any, next: any) {
-  const header = req.headers["authorization"];
+import jwt from "jsonwebtoken";
+import { Request, Response, NextFunction } from "express";
 
-  if (!header) {
-    return res.status(401).json({ success: false, error: "Token ausente" });
-  }
+export interface AuthenticatedRequest extends Request {
+  user?: any;
+}
 
-  const token = header.split(" ")[1];
-
+export default function authMiddleware(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): any {
   try {
+    const header = req.headers["authorization"];
+
+    if (!header) {
+      return res.status(401).json({ success: false, error: "Token ausente" });
+    }
+
+    const token = header.split(" ")[1];
+
+    if (!token) {
+      return res.status(401).json({ success: false, error: "Formato de token inválido" });
+    }
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET || "changeme");
-    req.user = decoded;
+    (req as AuthenticatedRequest).user = decoded;
     return next();
-  } catch (err) {
-    return res.status(401).json({ success: false, error: "Token inválido" });
+  } catch (err: any) {
+    return res.status(401).json({ success: false, error: "Token inválido ou expirado" });
   }
 }
+

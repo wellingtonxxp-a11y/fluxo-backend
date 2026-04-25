@@ -4,8 +4,10 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
+/// Modelo de Usuário
 model User {
   id          Int       @id @default(autoincrement())
   name        String
@@ -22,36 +24,70 @@ model User {
   strategies  StrategySession[]
 
   @@index([email])
+  @@index([createdAt])
 }
 
+/// Modelo de Zona Geográfica
 model Zone {
   id         Int               @id @default(autoincrement())
   name       String            @unique
   demand     Int               @default(0)
+  updatedAt  DateTime          @updatedAt
+
   flows      Flow[]
   feedbacks  HotspotFeedback[]
 
   @@index([name])
+  @@index([demand])
 }
 
+/// Modelo de Flow (Trajeto do usuário)
 model Flow {
   id           Int        @id @default(autoincrement())
   userId       Int
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  platform     Platform
-  zone         ZoneName?
+  
+  platform     Platform   @default(ifood)
+  zone         String?
   zoneId       Int?
-  zoneModel    Zone?      @relation(fields: [zoneId], references: [id])
+  zoneModel    Zone?      @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+  
   latitude     Float?
   longitude    Float?
   placeName    String?
   placeAddress String?
-  startedAt    DateTime
+  
+  startedAt    DateTime   @default(now())
   finishedAt   DateTime?
   durationMin  Float?
   value        Float?
   km           Float?
+  
   createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([userId])
+  @@index([zoneId])
+  @@index([createdAt])
+  @@index([latitude, longitude])
+  @@index([platform])
+}
+
+/// Modelo de Feedback de Hotspot
+model HotspotFeedback {
+  id         Int          @id @default(autoincrement())
+  userId     Int
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  zoneId     Int
+  zone       Zone         @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  
+  latitude   Float
+  longitude  Float
+  type       FeedbackType @default(TRAFFIC)
+  weight     Float        @default(1)
+  
+  createdAt  DateTime     @default(now())
 
   @@index([userId])
   @@index([zoneId])
@@ -59,63 +95,51 @@ model Flow {
   @@index([latitude, longitude])
 }
 
-model HotspotFeedback {
-  id         Int          @id @default(autoincrement())
-  userId     Int
-  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  zoneId     Int
-  zone       Zone         @relation(fields: [zoneId], references: [id])
-  latitude   Float
-  longitude  Float
-  type       FeedbackType
-  weight     Float
-  createdAt  DateTime     @default(now())
-
-  @@index([userId])
-  @@index([zoneId])
-  @@index([createdAt])
-}
-
+/// Modelo de Reputação do Usuário
 model UserReputation {
   id            Int      @id @default(autoincrement())
   userId        Int      @unique
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  score         Float    @default(0)
+  
+  score         Float    @default(50)
   feedbackCount Int      @default(0)
+  
   updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([score])
 }
 
+/// Modelo de Sessão de Estratégia
 model StrategySession {
-  id            Int            @id @default(autoincrement())
+  id            Int              @id @default(autoincrement())
   userId        Int
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  status        StrategyStatus
-  startedAt     DateTime       @default(now())
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  status        StrategyStatus   @default(ACTIVE)
+  
+  totalDistance Float            @default(0)
+  totalTimeMin  Float            @default(0)
+  totalScore    Float            @default(0)
+  
+  startedAt     DateTime         @default(now())
   endedAt       DateTime?
-  totalDistance Float          @default(0)
-  totalTimeMin  Float          @default(0)
-  totalScore    Float          @default(0)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 
   @@index([userId])
   @@index([status])
   @@index([createdAt])
 }
 
+// ============ ENUMS ============
+
 enum Platform {
   ifood
   uber
   noventa_nove
   rappi
-}
-
-enum ZoneName {
-  zona_sul
-  zona_norte
-  zona_leste
-  zona_oeste
-  centro
 }
 
 enum FeedbackType {
@@ -127,6 +151,7 @@ enum FeedbackType {
 }
 
 enum StrategyStatus {
-  active
-  ended
+  ACTIVE
+  COMPLETED
+  CANCELLED
 }
